@@ -42,12 +42,12 @@ public class FormLoginSecurityConfig {
 //     * 아이디와 패스워드를 자동으로 비교해주는 Provider 등록
 //     */
 //    @Bean
-//    public DaoAuthenticationProvider daoAuthenticationProvider(){
+//    public DaoAuthenticationProvider daoAuthenticationProvider(PasswordEncoder passwordEncoder){
 //        DaoAuthenticationProvider provider = new DaoAuthenticationProvider();
 //        // Provider가 사용할 서비스 객체
 //        provider.setUserDetailsService(customUserDetailService);
 //        // 사용할 비밀번호 인코더
-//        provider.setPasswordEncoder(passwordEncoder());
+//        provider.setPasswordEncoder(passwordEncoder);
 //
 //        return provider;
 //    }

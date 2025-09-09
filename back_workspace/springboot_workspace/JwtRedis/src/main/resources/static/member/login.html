@@ -1,0 +1,554 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Login</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.6.4/jquery.min.js"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+            background: #f7f9fc;
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            overflow: hidden;
+            position: relative;
+        }
+
+        /* 배경 애니메이션 */
+        .bg-animation {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: -1;
+            background: linear-gradient(45deg, #f0f2f5, #e8f4f8, #f7f9fc, #e3f2fd);
+            background-size: 400% 400%;
+            animation: gradientShift 15s ease infinite;
+        }
+
+        @keyframes gradientShift {
+            0% { background-position: 0% 50%; }
+            50% { background-position: 100% 50%; }
+            100% { background-position: 0% 50%; }
+        }
+
+        /* 파티클 효과 */
+        .particles {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: -1;
+        }
+
+        .particle {
+            position: absolute;
+            width: 3px;
+            height: 3px;
+            background: rgba(25, 118, 210, 0.3);
+            border-radius: 50%;
+            animation: float 8s ease-in-out infinite;
+        }
+
+        @keyframes float {
+            0%, 100% {
+                transform: translateY(0) translateX(0) rotate(0deg);
+                opacity: 0;
+            }
+            50% {
+                transform: translateY(-120px) translateX(50px) rotate(180deg);
+                opacity: 1;
+            }
+        }
+
+        /* 로그인 컨테이너 */
+        .login-container {
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(30px);
+            border: 1px solid rgba(0, 0, 0, 0.1);
+            border-radius: 24px;
+            padding: 48px 40px;
+            width: 100%;
+            max-width: 420px;
+            box-shadow:
+                    0 25px 50px rgba(0, 0, 0, 0.15),
+                    0 0 0 1px rgba(0, 0, 0, 0.05),
+                    inset 0 1px 0 rgba(255, 255, 255, 0.8);
+            position: relative;
+            overflow: hidden;
+            animation: slideUp 0.8s ease-out;
+        }
+
+        @keyframes slideUp {
+            from {
+                opacity: 0;
+                transform: translateY(30px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        /* 글로우 효과 */
+        .login-container::before {
+            content: '';
+            position: absolute;
+            top: -2px;
+            left: -2px;
+            right: -2px;
+            bottom: -2px;
+            background: linear-gradient(135deg, #1976d2, #42a5f5);
+            border-radius: 24px;
+            z-index: -1;
+            opacity: 0;
+            transition: opacity 0.3s ease;
+        }
+
+        .login-container:hover::before {
+            opacity: 0.1;
+        }
+
+        /* 헤더 */
+        .login-header {
+            text-align: center;
+            margin-bottom: 40px;
+        }
+
+        .login-title {
+            font-size: 32px;
+            font-weight: 700;
+            background: linear-gradient(135deg, #1976d2, #42a5f5);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            margin-bottom: 8px;
+            letter-spacing: -0.02em;
+        }
+
+        .login-subtitle {
+            color: #546e7a;
+            font-size: 15px;
+            font-weight: 400;
+        }
+
+        /* 폼 그룹 */
+        .form-group {
+            margin-bottom: 24px;
+            position: relative;
+        }
+
+        .form-label {
+            display: block;
+            color: #37474f;
+            font-size: 14px;
+            font-weight: 500;
+            margin-bottom: 8px;
+            transition: color 0.3s ease;
+        }
+
+        .form-input {
+            width: 100%;
+            background: rgba(255, 255, 255, 0.8);
+            border: 2px solid rgba(25, 118, 210, 0.2);
+            border-radius: 12px;
+            padding: 16px 20px;
+            color: #263238;
+            font-size: 15px;
+            font-family: inherit;
+            transition: all 0.3s ease;
+            outline: none;
+        }
+
+        .form-input::placeholder {
+            color: #90a4ae;
+        }
+
+        .form-input:focus {
+            border-color: #1976d2;
+            background: rgba(255, 255, 255, 1);
+            box-shadow: 0 0 20px rgba(25, 118, 210, 0.15);
+            transform: translateY(-1px);
+        }
+
+        .form-input:focus + .form-label {
+            color: #1976d2;
+        }
+
+        /* 아이콘 효과 */
+        .input-icon {
+            position: absolute;
+            right: 16px;
+            top: 50%;
+            transform: translateY(-50%);
+            color: #78909c;
+            transition: color 0.3s ease;
+        }
+
+        .form-input:focus ~ .input-icon {
+            color: #1976d2;
+        }
+
+        /* 옵션들 */
+        .form-options {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 32px;
+            font-size: 14px;
+        }
+
+        .checkbox-group {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .checkbox {
+            width: 18px;
+            height: 18px;
+            border: 2px solid rgba(25, 118, 210, 0.3);
+            border-radius: 4px;
+            background: transparent;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .checkbox:checked {
+            background: linear-gradient(135deg, #1976d2, #42a5f5);
+            border-color: #1976d2;
+        }
+
+        .checkbox-label {
+            color: #546e7a;
+            cursor: pointer;
+            user-select: none;
+        }
+
+        .forgot-password {
+            color: #1976d2;
+            text-decoration: none;
+            font-weight: 500;
+            transition: color 0.3s ease;
+        }
+
+        .forgot-password:hover {
+            color: #1565c0;
+        }
+
+        /* 로그인 버튼 */
+        .login-button {
+            width: 100%;
+            background: linear-gradient(135deg, #1976d2, #42a5f5, #64b5f6);
+            background-size: 200% 200%;
+            border: none;
+            border-radius: 12px;
+            padding: 16px;
+            color: #ffffff;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            position: relative;
+            overflow: hidden;
+            animation: gradientFlow 3s ease infinite;
+        }
+
+        @keyframes gradientFlow {
+            0% { background-position: 0% 50%; }
+            50% { background-position: 100% 50%; }
+            100% { background-position: 0% 50%; }
+        }
+
+        .login-button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 30px rgba(25, 118, 210, 0.3);
+        }
+
+        .login-button:active {
+            transform: translateY(0);
+        }
+
+        /* 구분선 */
+        .divider {
+            display: flex;
+            align-items: center;
+            margin: 32px 0;
+            color: #90a4ae;
+            font-size: 14px;
+        }
+
+        .divider::before,
+        .divider::after {
+            content: '';
+            flex: 1;
+            height: 1px;
+            background: linear-gradient(90deg, transparent, rgba(25, 118, 210, 0.3), transparent);
+        }
+
+        .divider span {
+            padding: 0 16px;
+            background: rgba(255, 255, 255, 0.95);
+        }
+
+        /* 소셜 로그인 */
+        .social-login {
+            display: flex;
+            gap: 12px;
+        }
+
+        .social-button {
+            flex: 1;
+            padding: 12px;
+            border: 2px solid rgba(0, 0, 0, 0.1);
+            border-radius: 10px;
+            background: rgba(255, 255, 255, 0.8);
+            color: #546e7a;
+            font-size: 13px;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            text-align: center;
+        }
+
+        .social-button:hover {
+            border-color: rgba(25, 118, 210, 0.3);
+            background: rgba(25, 118, 210, 0.05);
+            color: #1976d2;
+            transform: translateY(-1px);
+        }
+
+        /* 회원가입 링크 */
+        .signup-link {
+            text-align: center;
+            margin-top: 32px;
+            color: #546e7a;
+            font-size: 14px;
+        }
+
+        .signup-link a {
+            color: #1976d2;
+            text-decoration: none;
+            font-weight: 500;
+            transition: color 0.3s ease;
+        }
+
+        .signup-link a:hover {
+            color: #1565c0;
+        }
+
+        /* 반응형 */
+        @media (max-width: 480px) {
+            .login-container {
+                margin: 20px;
+                padding: 32px 24px;
+            }
+
+            .login-title {
+                font-size: 28px;
+            }
+        }
+
+        /* 입력 애니메이션 */
+        .form-group.focused .form-label {
+            color: #1976d2;
+        }
+
+        .typing-effect {
+            animation: typing 0.1s ease;
+        }
+
+        @keyframes typing {
+            0% { transform: scale(1.02); }
+            100% { transform: scale(1); }
+        }
+
+        /* 에러 메시지 */
+        .error-message {
+            color: #d32f2f;
+            font-size: 12px;
+            margin-top: 8px;
+            text-align: center;
+            padding: 8px;
+            background: rgba(211, 47, 47, 0.1);
+            border-radius: 6px;
+            border: 1px solid rgba(211, 47, 47, 0.2);
+        }
+    </style>
+</head>
+<body>
+<!-- 배경 애니메이션 -->
+<div class="bg-animation"></div>
+
+<!-- 파티클 효과 -->
+<div class="particles"></div>
+
+<!-- 로그인 폼 -->
+<div class="login-container">
+    <div class="login-header">
+        <h1 class="login-title">Welcome Back</h1>
+        <p class="login-subtitle">로그인하여 시작하세요</p>
+    </div>
+
+    <!-- 에러 메시지 표시 -->
+<!--    <div th:if="${error}" class="error-message" th:text="${error}"></div>-->
+
+    <form action="">
+        <div class="form-group">
+            <label class="form-label" for="loginId">사용자 ID</label>
+            <input type="text"
+                   id="loginId"
+                   name="loginId"
+                   class="form-input"
+                   placeholder="아이디를 입력하세요"
+                   required>
+            <div class="input-icon">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
+                    <path d="M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z"/>
+                </svg>
+            </div>
+        </div>
+
+        <div class="form-group">
+            <label class="form-label" for="password">비밀번호</label>
+            <input type="password"
+                   id="password"
+                   name="password"
+                   class="form-input"
+                   placeholder="비밀번호를 입력하세요"
+                   required>
+            <div class="input-icon">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
+                    <path d="M18,8h-1V6c0-2.76-2.24-5-5-5S7,3.24,7,6v2H6c-1.1,0-2,0.9-2,2v10c0,1.1,0.9,2,2,2h12c1.1,0,2-0.9,2-2V10C20,8.9,19.1,8,18,8z M12,17c-1.1,0-2-0.9-2-2s0.9-2,2-2s2,0.9,2,2S13.1,17,12,17z M15.1,8H8.9V6c0-1.71,1.39-3.1,3.1-3.1s3.1,1.39,3.1,3.1V8z"/>
+                </svg>
+            </div>
+        </div>
+
+        <div class="form-options">
+            <div class="checkbox-group">
+                <input type="checkbox"
+                       id="remember"
+                       name="remember"
+                       class="checkbox">
+                <label for="remember" class="checkbox-label">로그인 유지</label>
+            </div>
+            <a href="#" class="forgot-password">비밀번호 찾기</a>
+        </div>
+
+        <button type="button" id="bt_login" class="login-button">
+            로그인
+        </button>
+
+        <button type="button" id="bt_access" class="login-button">
+            회원 전용 자원 접근
+        </button>
+    </form>
+
+    <div class="divider">
+        <span>또는</span>
+    </div>
+
+    <div class="social-login">
+        <button class="social-button" type="button">Google</button>
+        <button class="social-button" type="button">Naver</button>
+    </div>
+
+    <div class="signup-link">
+        계정이 없으신가요? <a>회원가입</a>
+    </div>
+</div>
+
+<script>
+    // 비동기
+    $("#bt_login").click(()=>{
+        $.ajax({
+            url: "/member/login",
+            method: "post",
+            data: $("form").serialize(),
+            success: function (data){
+                console.log(data.accessToken);
+                localStorage.setItem("accessToken", data.accessToken)
+            },
+            error: function (xhr){
+                console.log(xhr.status, ", ", xhr.responseText);
+            }
+        });
+    });
+
+    $("#bt_access").click(()=>{
+        $.ajax({
+            url:"/member/mypage",
+            method: "get",
+            headers: {
+                "Authorization": "Bearer " + localStorage.getItem("accessToken"),
+            },
+            success: function (data) {
+                console.log(data);
+            },
+            error: function (xhr){
+                console.log(xhr.status, ", ", xhr.responseText);
+            }
+        });
+    });
+
+    /** ========= 화면 효과 ========= */
+    // 파티클 생성
+    function createParticles() {
+        const particleContainer = document.querySelector('.particles');
+        for (let i = 0; i < 60; i++) {
+            const particle = document.createElement('div');
+            particle.className = 'particle';
+            particle.style.left = Math.random() * 100 + '%';
+            particle.style.top = Math.random() * 100 + '%';
+            particle.style.animationDelay = Math.random() * 8 + 's';
+            particle.style.animationDuration = (6 + Math.random() * 4) + 's';
+            particleContainer.appendChild(particle);
+        }
+    }
+
+    // 입력 필드 효과
+    function addInputEffects() {
+        const inputs = document.querySelectorAll('.form-input');
+
+        inputs.forEach(input => {
+            const formGroup = input.closest('.form-group');
+
+            input.addEventListener('focus', () => {
+                formGroup.classList.add('focused');
+            });
+
+            input.addEventListener('blur', () => {
+                if (!input.value) {
+                    formGroup.classList.remove('focused');
+                }
+            });
+
+            input.addEventListener('input', () => {
+                input.classList.add('typing-effect');
+                setTimeout(() => {
+                    input.classList.remove('typing-effect');
+                }, 100);
+            });
+        });
+    }
+
+    // 초기화
+    document.addEventListener('DOMContentLoaded', () => {
+        createParticles();
+        addInputEffects();
+    });
+</script>
+</body>
+</html>
