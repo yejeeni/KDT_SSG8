@@ -1,128 +1,212 @@
 package com.ssg.jwtredis.util;
 
+import io.jsonwebtoken.Claims;
+import io.jsonwebtoken.Jws;
 import io.jsonwebtoken.Jwts;
 import io.jsonwebtoken.security.Keys;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.security.core.GrantedAuthority;
-import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.stereotype.Component;
 
 import javax.crypto.SecretKey;
 import java.nio.charset.StandardCharsets;
-import java.util.Collection;
-import java.util.Collections;
+import java.time.Instant;
 import java.util.Date;
+import java.util.UUID;
 
-//@Component
+/**
+ * JWT 발급/검증 전용 유틸리티
+ *
+ * AccessToken: 인증을 받았음을 증명하는 용도의 토큰 (짧은 만료시간)
+ * RefreshToken: AccessToken 재발급을 위한 검증용 토큰 (긴 만료시간)
+ */
+@Slf4j
+@Component
 public class JwtUtil {
 
-    @Value("${jwt.secret-key}")
-    private String secretKey;
+    private final SecretKey secretKey;
+    private final String issuer;
+    private final long accessMinutes;
+    private final long refreshDays;
 
-    @Value("${jwt.access.expiration}")
-    private long accessTokenExpiration; // 액세스 토큰 유효기간
-    
-    @Value("${jwt.refresh.expiration}")
-    private long refreshTokenExpiration; // 리프레시 토큰 유효기간
-    
-    /**
-     * SecretKey 생성
-     */
-    private SecretKey getSigningKey() {
-        // secretKey 값을 바이트 배열로 변환하여 HMAC 키 생성
-        return Keys.hmacShaKeyFor(secretKey.getBytes(StandardCharsets.UTF_8));
+    public JwtUtil(
+            @Value("${app.jwt.secret}") String secret,
+            @Value("${app.jwt.issuer}") String issuer,
+            @Value("${app.jwt.access-minutes}") long accessMinutes,
+            @Value("${app.jwt.refresh-days}") long refreshDays) {
+
+        this.secretKey = Keys.hmacShaKeyFor(secret.getBytes(StandardCharsets.UTF_8));
+        this.issuer = issuer;
+        this.accessMinutes = accessMinutes;
+        this.refreshDays = refreshDays;
     }
 
     /**
-     * Access Token 발급
+     * AccessToken 생성
      */
-    public String generateAccessToken(String username){
-        return generateToken(username, accessTokenExpiration);
-    }
+    public String createAccessToken(String userId, int userVersion, String deviceId) {
+        Instant now = Instant.now();
+        Instant expiration = now.plusSeconds(accessMinutes * 60);
 
-    /**
-     * Refresh Token 발급
-     */
-    public String generateRefreshToken(String username){
-        return generateToken(username, refreshTokenExpiration);
-    }
-
-    /**
-     * JWT 토큰 생성
-     * 사용자 정보와 만료시간을 포함한 JWT 토큰을 생성
-     *
-     * @param username 토큰에 포함될 사용자 이름 (subject로 저장)
-     * @param exp 토큰 만료 시간 (밀리초 단위, 현재시간 + exp 후 만료)
-     * @return 생성된 JWT 토큰 문자열
-     */
-    public String generateToken(String username, long exp) {
         return Jwts.builder()
-                .subject(username) // setSubject → subject
-                .issuedAt(new Date()) // setIssuedAt → issuedAt. 발급 시점
-                .expiration(new Date(System.currentTimeMillis() + exp)) // setExpiration → expiration. 유효 기간
-                .signWith(getSigningKey()) // signWith 간소화 (알고리즘 자동 선택. HMAC-SHA256으로 서명 (위변조 방지))
-                .compact(); // JWT 문자열로 압축하여 반환
-
-        // deprecated
-//        return Jwts.builder()
-//                .setSubject(username)
-//                .setIssuedAt(new Date()) // 토큰의 발급 시점
-//                .setExpiration(new Date(System.currentTimeMillis() + exp))
-//                .signWith(Keys.hmacShaKeyFor(secretKey.getBytes()), SignatureAlgorithm.HS256)
-//                .compact();
+                .issuer(issuer)
+                .subject(userId)
+                .id(UUID.randomUUID().toString())
+                .issuedAt(Date.from(now))
+                .expiration(Date.from(expiration))
+                .claim("ver", userVersion)
+                .claim("deviceId", deviceId)
+                .signWith(secretKey)
+                .compact();
     }
 
     /**
-     * JWT 토근의 서명과 만료시간 검증
-     * @param token
-     * @return
+     * RefreshToken 생성
+     * 보안상 민감한 토큰이므로 유출 시 즉시 재발급 필요
      */
-    public boolean validateToken(String token){
+    public String createRefreshToken(String userId, String deviceId) {
+        Instant now = Instant.now();
+        Instant expiration = now.plusSeconds(refreshDays * 24 * 60 * 60);
+
+        return Jwts.builder()
+                .issuer(issuer)
+                .subject(userId)
+                .id(UUID.randomUUID().toString())
+                .issuedAt(Date.from(now))
+                .expiration(Date.from(expiration))
+                .claim("deviceId", deviceId)
+                .signWith(secretKey)
+                .compact();
+    }
+
+    /**
+     * 토큰 유효성 검증
+     */
+    public boolean validateToken(String token) {
         try {
-            // deprecated
-//            Jwts.parserBuilder()
-//                    .setSigningKey(Keys.hmacShaKeyFor(secretKey.getBytes()))
-//                    .build()
-//                    .parseClaimsJws(token);
-            Jwts.parser()
-                    .verifyWith(getSigningKey())// 서명 검증용 키 설정
-                    .build()
-                    .parseSignedClaims(token); // 토큰 파싱 및 검증
+            parseToken(token);
             return true;
         } catch (Exception e) {
+            log.debug("유효하지 않은 토큰 - {}", e.getMessage());
             return false;
         }
     }
 
     /**
-     * JWT 토큰에서 사용자명 추출
-     * 토큰을 파싱하여 저장된 사용자명(subject)을 가져옴
-     *
-     * @param token 파싱할 JWT 토큰 문자열
-     * @return 토큰에 저장된 사용자명
+     * 토큰 파싱 및 검증 (서명, 만료기간, 구조 검증)
      */
-    public String getUsernameFromToken(String token) {
-        return Jwts.parser() // JWT 파서 생성
-                .verifyWith(getSigningKey()) // 서명 검증을 위한 키 설정
-                .build() // 파서 빌드
-                .parseSignedClaims(token) // 토큰 파싱 및 서명 검증
-                .getPayload() // 토큰의 페이로드(실제 데이터) 부분 가져오기
-                .getSubject(); // 페이로드에서 subject(사용자명) 추출
-
-        // deprecated
-//        return Jwts.parser()
-//                .setSigningKey(Keys.hmacShaKeyFor(secretKey.getBytes()))
-//                .build()
-//                .parseClaimsJws(token)
-//                .getBody()
-//                .getSubject();
+    public Jws<Claims> parseToken(String token) {
+        return Jwts.parser()
+                .verifyWith(secretKey)
+                .build()
+                .parseSignedClaims(token);
     }
 
     /**
-     * 토큰에서 사용자 권한 정보 추출
+     * 토큰에서 Claims 추출
      */
-    public Collection<? extends GrantedAuthority> getAuthoritiesFromToken(String token) {
-        // 권한 정보가 토큰에 없어도 기본 권한 반환
-        return Collections.singletonList(new SimpleGrantedAuthority("ROLE_USER"));
+    public Claims getClaims(String token) {
+        return parseToken(token).getPayload();
+    }
+
+    // =================================================================
+    // Claims에서 정보 추출 메서드들
+    // =================================================================
+
+    /**
+     * 사용자 ID 추출
+     */
+    public String getUserId(Claims claims) {
+        return claims.getSubject();
+    }
+
+    /**
+     * 토큰 고유 ID(JTI) 추출
+     */
+    public String getJti(Claims claims) {
+        return claims.getId();
+    }
+
+    /**
+     * 사용자 버전 추출
+     */
+    public int getVersion(Claims claims) {
+        Object version = claims.get("ver");
+        return (version == null) ? 0 : (Integer) version;
+    }
+
+    /**
+     * 디바이스 ID 추출
+     */
+    public String getDeviceId(Claims claims) {
+        Object deviceId = claims.get("deviceId");
+        return (deviceId == null) ? "" : deviceId.toString();
+    }
+
+    /**
+     * 토큰 만료시간 추출 (Unix timestamp)
+     */
+    public long getExpireTime(Claims claims) {
+        Date expiration = claims.getExpiration();
+        return (expiration == null) ? 0L : expiration.toInstant().getEpochSecond();
+    }
+
+    /**
+     * 토큰 발급시간 추출 (Unix timestamp)
+     */
+    public long getIssuedTime(Claims claims) {
+        Date issuedAt = claims.getIssuedAt();
+        return (issuedAt == null) ? 0L : issuedAt.toInstant().getEpochSecond();
+    }
+
+    // =================================================================
+    // 편의 메서드들 - 토큰에서 직접 정보 추출
+    // =================================================================
+
+    /**
+     * 토큰에서 사용자 ID 직접 추출
+     */
+    public String getUserIdFromToken(String token) {
+        return getUserId(getClaims(token));
+    }
+
+    /**
+     * 토큰에서 디바이스 ID 직접 추출
+     */
+    public String getDeviceIdFromToken(String token) {
+        return getDeviceId(getClaims(token));
+    }
+
+    /**
+     * 토큰에서 사용자 버전 직접 추출
+     */
+    public int getVersionFromToken(String token) {
+        return getVersion(getClaims(token));
+    }
+
+    /**
+     * 토큰 만료 여부 확인
+     */
+    public boolean isTokenExpired(String token) {
+        try {
+            Claims claims = getClaims(token);
+            return claims.getExpiration().before(new Date());
+        } catch (Exception e) {
+            return true;
+        }
+    }
+
+    /**
+     * 토큰 만료까지 남은 시간 (초)
+     */
+    public long getTimeUntilExpiration(String token) {
+        try {
+            Claims claims = getClaims(token);
+            long expireTime = getExpireTime(claims);
+            long currentTime = Instant.now().getEpochSecond();
+            return Math.max(0, expireTime - currentTime);
+        } catch (Exception e) {
+            return 0;
+        }
     }
 }

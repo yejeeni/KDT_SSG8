@@ -1,0 +1,81 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Title</title>
+    <script src="https://code.jquery.com/jquery-latest.min.js"></script>
+</head>
+<body>
+    본문입니다
+    <button type="button" onclick="logout()">로그아웃</button>
+    <button type="button" onclick="getMyInfo()">내정보 보기</button>
+</body>
+<script>
+    /**
+     * 서버측에서 401
+     */
+    function refreshToken(){
+
+    }
+
+    function logout(){
+        const accessToken = localStorage.getItem("accessToken");
+        const deviceId = localStorage.getItem("deviceId");
+        $.ajax({
+            url: "/member/logout",
+            method: "post",
+            contentType: "application/json;charset=utf-8",
+            data: JSON.stringify({
+                accessToken: accessToken,
+                deviceId: deviceId
+            }),
+            success: function (data){
+                console.log(data);
+            },
+            error: function (xhr){
+                console.log(xhr);
+            }
+        });
+    }
+
+    /**
+     * 리프레시 토큰으로 액세스 토큰 재발급
+     */
+    function tryAccessToken(){
+        $.ajax({
+            url: "/member/refresh",
+            method: "post",
+            contentType: "application/json;charset=utf-8",
+            data: JSON.stringify({
+                deviceId: localStorage.getItem("deviceId")
+            }),
+            success: function (data){
+                console.log(data.accessToken);
+            },
+            error: function (xhr){
+                console.log(xhr);
+            }
+        });
+    }
+
+    function getMyInfo(){
+        const accessToken = localStorage.getItem("accessToken");
+        $.ajax({
+            url: "/member/myinfo",
+            method: "get",
+            headers:{
+                "Authorization":"Bearer "+accessToken
+            },
+            success: function (data){
+                console.log(data);
+            },
+            error: function (xhr){
+                console.log(xhr);
+                if (xhr.status == 401){
+
+                }
+            }
+        });
+    }
+</script>
+</html>

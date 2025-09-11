@@ -2,7 +2,7 @@ package com.ssg.jwtredis.service.member;
 
 import com.ssg.jwtredis.domain.Member;
 import com.ssg.jwtredis.repository.MemberRepository;
-import com.ssg.jwtredis.security.SecurityConfig;
+import com.ssg.jwtredis.security.CustomUserDetails;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.core.userdetails.UserDetailsService;
@@ -23,6 +23,6 @@ public class MemberDetailsService implements UserDetailsService {
             throw new UsernameNotFoundException("사용자 정보 없음");
         }
 
-        return new SecurityConfig.CustomUserDetails(member);
+        return new CustomUserDetails(member);
     }
 }

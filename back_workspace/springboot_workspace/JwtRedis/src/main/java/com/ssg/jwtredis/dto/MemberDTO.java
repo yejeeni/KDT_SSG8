@@ -19,4 +19,6 @@ public class MemberDTO {
     private String email;
 
     private String code;
+    
+    private String deviceId; // 사용 중인 디바이스의 고유값
 }

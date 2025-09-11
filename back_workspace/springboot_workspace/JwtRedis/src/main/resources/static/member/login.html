@@ -472,16 +472,24 @@
 
 <script>
     // 비동기
-    $("#bt_login").click(()=>{
+    $("#bt_login").click(() => {
+        const formData = {
+            loginId: $("#loginId").val(),
+            password: $("#password").val(),
+            deviceId: "browser-device"
+        };
+
         $.ajax({
             url: "/member/login",
-            method: "post",
-            data: $("form").serialize(),
-            success: function (data){
+            method: "POST",
+            contentType: "application/json", // JSON으로 전송
+            data: JSON.stringify(formData),  // JSON 문자열로 변환
+            success: function (data) {
                 console.log(data.accessToken);
-                localStorage.setItem("accessToken", data.accessToken)
+                localStorage.setItem("accessToken", data.accessToken);
+                location.href = "/index.html";
             },
-            error: function (xhr){
+            error: function (xhr) {
                 console.log(xhr.status, ", ", xhr.responseText);
             }
         });
