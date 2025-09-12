@@ -59,8 +59,7 @@ public class SecurityConfig {
                 // 기본 로그아웃 비활성화
                 .logout(AbstractHttpConfigurer::disable)
                 .authorizeHttpRequests(auth->auth
-                        .requestMatchers("/member/register.html", "/member/register", "/member/login.html", "/member/login").permitAll()
-                        .requestMatchers("/member/refresh", "/member/logout", "/index.html", "/member/myinfo").permitAll()
+                        .requestMatchers("/index.html","/member/register.html", "/member/register","/member/login.html","/member/login","/member/refresh" ,"/member/logout", "/member/myinfo").permitAll()
                         .anyRequest().authenticated())
                 .build();
     }

@@ -147,6 +147,21 @@ public class RedisTokenService {
     }
 
     /**
+     * 리프레시 토큰 일치 여부 확인
+     * GET rt:유저id:deviceId
+     * @param userId
+     * @param deviceId
+     * @return
+     */
+    public boolean matchesRefreshToken(String userId, String deviceId, String refreshToken){
+        // redis에 저장해놓은 기존 리프레시 토큰의 키 값
+        String storedValue = redis.opsForValue().get("rt:"+userId+":"+deviceId);
+
+        // 저장된 키와 비교
+        return refreshToken.equals(storedValue);
+    }
+
+    /**
      * 리프레시 토큰 삭제 (로그아웃 시 사용)
      *
      * @param userId 사용자 ID
@@ -156,8 +171,7 @@ public class RedisTokenService {
         String key = "rt:" + userId + ":" + deviceId;
         Boolean deleted = redis.delete(key);
 
-        log.info("리프레시 토큰 삭제 - userId: {}, deviceId: {}, deleted: {}",
-                userId, deviceId, deleted);
+        log.info("리프레시 토큰 삭제 - userId: {}, deviceId: {}, deleted: {}", userId, deviceId, deleted);
     }
 
     /**
@@ -193,4 +207,5 @@ public class RedisTokenService {
 
         return count;
     }
+
 }

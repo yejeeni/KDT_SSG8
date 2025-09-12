@@ -30,10 +30,15 @@
                 deviceId: deviceId
             }),
             success: function (data){
-                console.log(data);
+                //로컬 상에 보유한 데이터를 삭제
+                localStorage.removeItem("accessToken");
+                localStorage.removeItem("deviceId");
+
+                alert("로그아웃 되었습니다");
+                location.href="/member/login.html";
             },
             error: function (xhr){
-                console.log(xhr);
+                console.log(xhr.responseText);
             }
         });
     }
@@ -70,9 +75,9 @@
                 console.log(data);
             },
             error: function (xhr){
-                console.log(xhr);
-                if (xhr.status == 401){
-
+                if (xhr.status === 401){
+                    console.log("액세스 토큰 만료로 인하여 재발급");
+                    tryAccessToken();
                 }
             }
         });
