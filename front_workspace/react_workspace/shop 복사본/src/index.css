@@ -1,0 +1,18 @@
+body {
+  background: #f8f9fa;  /* 부트스트랩 라이트그레이 */
+  font-family: 'Segoe UI', sans-serif;
+}
+
+.navbar-brand {
+  color: #ff7f50 !important;
+  font-weight: bold;
+}
+
+.btn-orange {
+  background-color: #ff7f50;
+  color: white;
+  border: none;
+}
+.btn-orange:hover {
+  background-color: #ff956d;
+}
